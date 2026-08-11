@@ -195,7 +195,7 @@ abstract base class RequestHandler {
 @anonymous
 extension type _OpenRequest._(OpenRequest _) implements OpenRequest {
   external factory _OpenRequest({
-    @JS('u') required String wasmUri,
+    @JS('u') required String? wasmUri,
     @JS('d') required String databaseName,
     @JS('s') required JSString storageMode,
     @JS('o') required bool onlyOpenVfs,
@@ -206,7 +206,7 @@ extension type _OpenRequest._(OpenRequest _) implements OpenRequest {
   });
 }
 OpenRequest newOpenRequest({
-  required String wasmUri,
+  required String? wasmUri,
   required String databaseName,
   required JSString storageMode,
   required bool onlyOpenVfs,

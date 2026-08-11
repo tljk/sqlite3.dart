@@ -76,8 +76,10 @@ enum FileSystemImplementation {
 
 @MessageTypeName('open')
 extension type OpenRequest._(JSObject _) implements Request {
+  /// When null, connect to an existing database or throw if no such database
+  /// exists.
   @JS(_UniqueFieldNames.wasmUri)
-  external String wasmUri;
+  external String? wasmUri;
 
   @JS(_UniqueFieldNames.databaseName)
   external String databaseName;

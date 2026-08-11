@@ -88,7 +88,7 @@ export type Response =
   | ErrorResponse;
 export interface OpenRequest {
   // Dart name: wasmUri
-  u: string;
+  u: string | null;
   // Dart name: databaseName
   d: string;
   // Dart name: storageMode

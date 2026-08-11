@@ -11,8 +11,9 @@ import 'package:web/web.dart'
         EventStreamProviders,
         URL;
 
-import '../database.dart';
 import '../channel.dart';
+import '../client.dart' as client;
+import '../database.dart';
 import '../external_locks_vfs.dart';
 import '../locks.dart';
 import '../protocol.dart';
@@ -21,6 +22,14 @@ import '../statement_cache.dart';
 import '../types.dart';
 import 'check_opfs_support.dart';
 import 'connector.dart';
+
+abstract final class RunningWorker {
+  Future<Database> connectToExisting(
+    String databaseName,
+    DatabaseImplementation implementation, {
+    Future<JSAny?> Function(JSAny?)? handleCustomRequest,
+  });
+}
 
 extension on WorkerEnvironment {
   /// Messages outside of a connection being posted to the worker or a connect
@@ -272,18 +281,35 @@ final class _ClientConnection extends ProtocolChannel
     OpenRequest request,
     AbortSignal abortSignal,
   ) async {
+    final databaseName = request.databaseName;
+    final mode = FileSystemImplementation.fromJS(request.storageMode);
+
     return await _runner.openLock.withCriticalSection(() async {
-      await _runner.loadWasmModule(request.wasmUri);
+      final wasmUri = request.wasmUri;
+      if (wasmUri != null) {
+        await _runner.loadWasmModule(wasmUri);
+      }
+
       DatabaseState? database;
       _ConnectionDatabase? connectionDatabase;
 
       try {
-        database = _runner.findDatabase(
-          request.databaseName,
-          FileSystemImplementation.fromJS(request.storageMode),
-          request.preparedStatementCacheSize,
-          request.additionalData,
-        );
+        database = _runner.findExistingDatabase(databaseName, mode);
+
+        if (database == null) {
+          if (wasmUri == null) {
+            // A null uri indicates that the client only wants to connect to an
+            // existing database.
+            throw StateError('Requested database not open');
+          }
+
+          database = _runner.openNewDatabase(
+            databaseName,
+            mode,
+            request.preparedStatementCacheSize,
+            request.additionalData,
+          );
+        }
 
         await (request.onlyOpenVfs ? database.vfs : database.opened);
 
@@ -780,7 +806,7 @@ final class DatabaseState {
   }
 }
 
-final class WorkerRunner {
+final class WorkerRunner extends RunningWorker {
   final WorkerEnvironment _environment;
   final DatabaseController _controller;
 
@@ -928,11 +954,9 @@ final class WorkerRunner {
     }
   }
 
-  DatabaseState findDatabase(
+  DatabaseState? findExistingDatabase(
     String name,
     FileSystemImplementation mode,
-    int cacheSize,
-    JSAny? additionalOptions,
   ) {
     for (final existing in openedDatabases.values) {
       if (existing.refCount != 0 &&
@@ -943,6 +967,15 @@ final class WorkerRunner {
       }
     }
 
+    return null;
+  }
+
+  DatabaseState openNewDatabase(
+    String name,
+    FileSystemImplementation mode,
+    int cacheSize,
+    JSAny? additionalOptions,
+  ) {
     final id = _nextDatabaseId++;
     return openedDatabases[id] = DatabaseState(
       id: id,
@@ -951,6 +984,45 @@ final class WorkerRunner {
       mode: mode,
       additionalOptions: additionalOptions,
       statementCacheSize: cacheSize,
+    );
+  }
+
+  @override
+  Future<Database> connectToExisting(
+    String databaseName,
+    DatabaseImplementation implementation, {
+    Future<JSAny?> Function(JSAny?)? handleCustomRequest,
+  }) async {
+    final (endpoint, clientChannel) = await createChannel();
+    final resolved = implementation.resolveToVfs();
+    final inner = _innerWorker;
+    if (resolved == .opfsShared && inner != null) {
+      // The database is not hosted by this worker directly, use the dedicated-
+      // in-shared worker owning the database.
+      newConnectRequest(
+        endpoint: endpoint,
+        requestId: 0,
+        databaseId: null,
+      ).sendToWorker(inner);
+      clientChannel.injectErrors = inner.targetForErrorEvents;
+    } else {
+      _accept(endpoint.connect());
+    }
+
+    final clientConnection = client.WorkerConnection(
+      clientChannel,
+      handleCustomRequest ?? client.defaultCustomRequestHandler,
+    );
+    return await clientConnection.requestDatabaseFromOpenRequest(
+      newOpenRequest(
+        requestId: 0,
+        wasmUri: null,
+        databaseName: databaseName,
+        storageMode: resolved.toJS,
+        onlyOpenVfs: false,
+        additionalData: null,
+        preparedStatementCacheSize: 0,
+      ),
     );
   }
 }

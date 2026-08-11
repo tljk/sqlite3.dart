@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:typed_data';
 
+import 'package:meta/meta.dart';
 import 'package:sqlite3/wasm.dart' hide WorkerOptions;
 import 'package:web/web.dart'
     hide Response, Request, FileSystem, Notification, Lock;
@@ -380,8 +381,8 @@ final class WorkerConnection extends ProtocolChannel {
     required bool onlyOpenVfs,
     required int statementCacheSize,
     required JSAny? additionalOptions,
-  }) async {
-    final response = await sendRequest(
+  }) {
+    return requestDatabaseFromOpenRequest(
       newOpenRequest(
         requestId: 0,
         wasmUri: wasmUri,
@@ -391,6 +392,14 @@ final class WorkerConnection extends ProtocolChannel {
         additionalData: additionalOptions,
         preparedStatementCacheSize: statementCacheSize,
       ),
+    );
+  }
+
+  Future<RemoteDatabase> requestDatabaseFromOpenRequest(
+    OpenRequest request,
+  ) async {
+    final response = await sendRequest(
+      request,
       MessageType.simpleSuccessResponse,
     );
 
@@ -399,6 +408,10 @@ final class WorkerConnection extends ProtocolChannel {
       databaseId: (response.response as JSNumber).toDartInt,
     );
   }
+}
+
+Future<JSAny?> defaultCustomRequestHandler(JSAny? request) {
+  return Future.error(StateError('No custom request handler installed'));
 }
 
 final class DatabaseClient implements WebSqlite {
@@ -422,11 +435,7 @@ final class DatabaseClient implements WebSqlite {
     this.wasmUri,
     this._localController,
     Future<JSAny?> Function(JSAny?)? handleCustomRequest,
-  ) : _handleCustomRequest =
-          handleCustomRequest ??
-          ((_) async {
-            throw StateError('No custom request handler installed');
-          });
+  ) : _handleCustomRequest = handleCustomRequest ?? defaultCustomRequestHandler;
 
   Future<void> startWorkers() {
     return _startWorkers.withCriticalSection(() async {
@@ -800,7 +809,8 @@ final class DatabaseClient implements WebSqlite {
   static const _workerInitializationTimeout = Duration(seconds: 1);
 }
 
-extension on DatabaseImplementation {
+@internal
+extension ResolveDatabaseImplementation on DatabaseImplementation {
   FileSystemImplementation resolveToVfs() {
     return switch (storage) {
       StorageMode.opfs => switch (this) {

@@ -350,14 +350,12 @@ abstract class WebSqlite {
   ///
   /// This function should be called in the `main` function of a Dart program
   /// acting as a database worker.
-  static void workerEntrypoint({
+  static RunningWorker workerEntrypoint({
     required DatabaseController controller,
     WorkerEnvironment? environment,
   }) {
-    WorkerRunner(
-      controller,
-      environment ?? WorkerEnvironment(),
-    ).handleRequests();
+    return WorkerRunner(controller, environment ?? WorkerEnvironment())
+      ..handleRequests();
   }
 
   /// Opens a [WebSqlite] instance by connecting to workers with the given
