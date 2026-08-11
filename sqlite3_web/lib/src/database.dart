@@ -7,8 +7,8 @@ import 'package:web/web.dart' hide FileSystem;
 
 import 'types.dart';
 import 'client.dart';
-import 'worker.dart';
-import 'worker_connector.dart';
+import 'worker/connector.dart';
+import 'worker/worker.dart';
 
 /// A controller responsible for opening databases in the worker.
 abstract base class DatabaseController {
@@ -347,6 +347,9 @@ abstract class WebSqlite {
   void close();
 
   /// Entrypoints for workers hosting databases.
+  ///
+  /// This function should be called in the `main` function of a Dart program
+  /// acting as a database worker.
   static void workerEntrypoint({
     required DatabaseController controller,
     WorkerEnvironment? environment,

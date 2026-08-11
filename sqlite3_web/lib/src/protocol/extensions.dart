@@ -6,7 +6,7 @@ import 'package:web/web.dart' show MessagePort;
 
 import '../js_array_buffer.dart';
 import '../types.dart';
-import '../worker_connector.dart';
+import '../worker/connector.dart';
 import 'helper.g.dart';
 import 'messages.dart';
 

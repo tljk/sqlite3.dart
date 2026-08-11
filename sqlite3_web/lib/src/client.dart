@@ -12,7 +12,7 @@ import 'channel.dart';
 import 'database.dart';
 import 'protocol.dart';
 import 'shared.dart';
-import 'worker_connector.dart';
+import 'worker/connector.dart';
 
 final class _CommitOrRollbackStream {
   StreamSubscription<Notification>? workerSubscription;

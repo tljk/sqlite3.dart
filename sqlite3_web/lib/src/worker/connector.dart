@@ -1,4 +1,4 @@
-/// @docImport 'database.dart';
+/// @docImport '../database.dart';
 library;
 
 import 'dart:async';
