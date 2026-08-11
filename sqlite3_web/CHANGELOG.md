@@ -1,3 +1,8 @@
+## 0.9.5-wip
+
+- Add `RunningWorker` interface, which can be used to access database connections
+  from the worker hosting them.
+
 ## 0.9.4
 
 - For apps compiled with dart2wasm, preserve types of doubles that are exact

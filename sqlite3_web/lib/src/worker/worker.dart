@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:typed_data';
+import 'package:meta/meta.dart';
 import 'package:sqlite3/wasm.dart';
 import 'package:web/web.dart'
     show
@@ -23,7 +24,20 @@ import '../types.dart';
 import 'check_opfs_support.dart';
 import 'connector.dart';
 
+/// A `sqlite3_web` worker running in the local context.
+///
+/// This is returned when starting workers with [WebSqlite.workerEntrypoint],
+/// and can be used to obtain connections hosted by the worker itself (useful
+/// when a database worker and other functionality is both compiled into the
+/// same Dart program).
+@experimental
 abstract final class RunningWorker {
+  /// Obtain a [Database] connection to a database hosted by this worker.
+  ///
+  /// This throws a [StateError] if no database with the given name and
+  /// implementation is hosted by this worker (or a nested worker managed by
+  /// this worker).
+  @experimental
   Future<Database> connectToExisting(
     String databaseName,
     DatabaseImplementation implementation, {
@@ -636,7 +650,7 @@ final class DatabaseState {
   final WorkerRunner runner;
   final int id;
   final String name;
-  final FileSystemImplementation mode;
+  FileSystemImplementation mode; // mutable for tests only
   final JSAny? additionalOptions;
   final DatabaseLocks locks;
   final PreparedStatementCache? statementCache;

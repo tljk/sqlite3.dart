@@ -396,6 +396,37 @@ void main() {
         throwsA(isA<RemoteException>()),
       );
     });
+
+    test('can connect to nested worker', () async {
+      final nestedEnv = FakeWorkerEnvironment();
+      final sharedEnv = FakeWorkerEnvironment(_FakeWorkerConnector(nestedEnv));
+
+      final nested = WebSqlite.workerEntrypoint(
+        controller: _TestController(),
+        environment: nestedEnv,
+      );
+
+      // Open an in-memory database on the nested worker, then pretend it's an
+      // OPFS database.
+      {
+        final nestedRunner = nested as WorkerRunner;
+
+        await nestedRunner.loadWasmModule(sqlite3WasmUri);
+        final db = nestedRunner.openNewDatabase('foo', .inMemory, 0, null);
+        await db.opened;
+        db.mode = .opfsShared;
+      }
+
+      final shared = WebSqlite.workerEntrypoint(
+        controller: _TestController(),
+        environment: sharedEnv,
+      );
+
+      // Ensure we can connected to the nested worker via connectToExisting on
+      // the outer shared worker.
+      final existing = await shared.connectToExisting('foo', .opfsShared);
+      await existing.select('SELECT 1');
+    });
   });
 
   group('statement cache', () {
