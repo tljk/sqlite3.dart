@@ -494,10 +494,31 @@ jobs:
       - run: ls -al out/
       - run: ls -al sqlite3_connection_pool/lib/src/precompiled/
 
-      - name: Attest
-        if: inputs.attest
+      - uses: dart-lang/setup-dart@v1
+      - name: Generate SBOMs
+        run: |
+          dart pub get
+          dart tool/generate_sbom.dart sqlite3 > sqlite3.bom.json
+          dart tool/generate_sbom.dart sqlite3_connection_pool > sqlite3_connection_pool.bom.json
+
+      - name: Attest provenance
         uses: actions/attest@v4
         with:
           subject-path: |
             out/*
+            sqlite3_connection_pool/lib/src/precompiled/*
+
+      - name: Attest plain SQLite build SBOM
+        uses: actions/attest@v4
+        with:
+          sbom-path: sqlite3.bom.json
+          subject-path: |
+            out/libsqlite3.*
+            out/sqlite3.*
+
+      - name: Attest connection pools SBOM
+        uses: actions/attest@v4
+        with:
+          sbom-path: sqlite3_connection_pool.bom.json
+          subject-path: |
             sqlite3_connection_pool/lib/src/precompiled/*
