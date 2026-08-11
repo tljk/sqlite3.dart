@@ -10,6 +10,7 @@ import 'package:sqlite3/src/wasm/sqlite3.dart';
 import 'package:sqlite3_web/sqlite3_web.dart';
 import 'package:sqlite3_web/src/client.dart';
 import 'package:sqlite3_web/src/statement_cache.dart';
+import 'package:sqlite3_web/src/worker/worker.dart';
 import 'package:test/test.dart';
 
 import 'protocol_test.dart';
@@ -17,6 +18,7 @@ import 'protocol_test.dart';
 void main() {
   late String sqlite3WasmUri;
   late FakeWorkerEnvironment fakeWorkers;
+  late RunningWorker worker;
 
   setUpAll(() async {
     final channel = spawnHybridUri('/test/asset_server.dart');
@@ -26,7 +28,7 @@ void main() {
 
   setUp(() {
     fakeWorkers = FakeWorkerEnvironment();
-    WebSqlite.workerEntrypoint(
+    worker = WebSqlite.workerEntrypoint(
       controller: _TestController(),
       environment: fakeWorkers,
     );
@@ -364,6 +366,36 @@ void main() {
     // Additionally, the worker should close its environment.
     await pumpEventQueue();
     expect(fakeWorkers.isClosed, isTrue);
+  });
+
+  group('connectToExisting', () {
+    test('can connect locally', () async {
+      final client = WebSqlite.open(
+        workers: _FakeWorkerConnector(fakeWorkers),
+        wasmModule: sqlite3WasmUri,
+      );
+      final database = await client.connect(
+        'foo',
+        DatabaseImplementation.inMemoryShared,
+      );
+      await database.select('SELECT 1');
+
+      final localDatabase = await worker.connectToExisting(
+        'foo',
+        .inMemoryShared,
+      );
+      await database.dispose();
+
+      await localDatabase.select('SELECT 1');
+      await localDatabase.dispose();
+    });
+
+    test('throws when database does not exist', () async {
+      expect(
+        worker.connectToExisting('foo', .inMemoryShared),
+        throwsA(isA<RemoteException>()),
+      );
+    });
   });
 
   group('statement cache', () {
