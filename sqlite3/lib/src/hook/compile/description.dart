@@ -263,6 +263,10 @@ final class PrecompiledFromGithubAssets extends PrecompiledBinary {
     HttpClientResponse response;
     try {
       final request = await client.getUrl(uri);
+      request.headers.add(
+        'User-Agent',
+        'github.com/simolus3/sqlite3.dart artifact downloader, version $releaseTag',
+      );
       response = await request.close();
     } catch (e, s) {
       // Improve error message by providing some context about why we download
