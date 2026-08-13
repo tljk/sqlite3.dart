@@ -294,12 +294,10 @@ void testDatabase(
         expect(
           () => cursor.moveNext(),
           throwsA(
-            sqlite3Exception(
-              'iterating through statement',
-              sql,
-              [1, 3],
-              contains('Causing statement: $sql, parameters: 1, 3'),
-            ),
+            sqlite3Exception('iterating through statement', sql, [
+              1,
+              3,
+            ], contains('Causing statement: $sql, parameters: 1, 3')),
           ),
         );
       });
@@ -323,25 +321,21 @@ void testDatabase(
     );
   });
 
-  test(
-    'open shared in-memory instances',
-    () {
-      final db1 = sqlite3.open('file:test?mode=memory&cache=shared', uri: true);
-      final db2 = sqlite3.open('file:test?mode=memory&cache=shared', uri: true);
-      addTearDown(() {
-        db1.close();
-        db2.close();
-      });
+  test('open shared in-memory instances', () {
+    final db1 = sqlite3.open('file:test?mode=memory&cache=shared', uri: true);
+    final db2 = sqlite3.open('file:test?mode=memory&cache=shared', uri: true);
+    addTearDown(() {
+      db1.close();
+      db2.close();
+    });
 
-      db1
-        ..execute('CREATE TABLE tbl (a INTEGER NOT NULL);')
-        ..execute('INSERT INTO tbl VALUES (1), (2), (3);');
+    db1
+      ..execute('CREATE TABLE tbl (a INTEGER NOT NULL);')
+      ..execute('INSERT INTO tbl VALUES (1), (2), (3);');
 
-      final result = db2.select('SELECT * FROM tbl');
-      expect(result, hasLength(3));
-    },
-    skip: hasSharedCache ? null : 'Test requires shared cache',
-  );
+    final result = db2.select('SELECT * FROM tbl');
+    expect(result, hasLength(3));
+  }, skip: hasSharedCache ? null : 'Test requires shared cache');
 
   test('locked exceptions', () {
     final db1 = sqlite3.open('file:busy?mode=memory&cache=shared', uri: true);
