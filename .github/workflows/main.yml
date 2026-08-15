@@ -284,6 +284,7 @@ jobs:
         working-directory: sqlite3_web/extra/js-package
         run: |
           corepack enable
+          npm install
           npm run build:worker
           node tool/build_worker_testing.js
           npm run build
