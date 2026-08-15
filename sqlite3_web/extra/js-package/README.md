@@ -65,10 +65,10 @@ To enable encryption:
 ## Local development
 
 Working on this package requires a [Dart SDK](https://dart.dev/) installation. Run `dart pub get` in the repository
-and `pnpm install` in `sqlite3_web/extra/js-package`.
+and `npm install` in `sqlite3_web/extra/js-package`.
 
-To download the WebAssembly files from the latest release, use `pnpm wasm:download`.
+To download the WebAssembly files from the latest release, use `npm run wasm:download`.
 To compile them yourself, see [this directory](https://github.com/simolus3/sqlite3.dart/tree/main/sqlite3_wasm_build).
 
-To build the worker, run `pnpm build:worker`. Finally, `pnpm build` builds and bundles TypeScript sources and
-`pnpm test` tests the package.
+To build the worker, run `npm run build:worker`. Finally, `npm run build` builds and bundles TypeScript sources and
+`npm run test` tests the package.
