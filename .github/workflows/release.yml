@@ -163,17 +163,14 @@ jobs:
         node-version: latest
         package-manager-cache: false
 
-    - name: Install pnpm
-      uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-      with:
-        package_json_file: sqlite3_web/extra/js-package/package.json
-
-    - name: Build pnpm package
+    - name: Build npm package
       working-directory: sqlite3_web/extra/js-package
       run: |
-        pnpm build:worker
-        pnpm build
+        corepack enable
+        npm install
+        npm run build:worker
+        npm run build
 
     - name: Publish to npmjs.com
       working-directory: sqlite3_web/extra/js-package
-      run: pnpm publish --no-git-checks
+      run: npm publish
