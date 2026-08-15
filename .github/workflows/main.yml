@@ -279,18 +279,14 @@ jobs:
         with:
           node-version: latest
           package-manager-cache: false
-
-      - name: Install pnpm
-        uses: pnpm/action-setup@0ebf47130e4866e96fce0953f49152a61190b271 # v6.0.9
-        with:
-          package_json_file: sqlite3_web/extra/js-package/package.json
-
-      - name: Build pnpm package
+      
+      - name: Build npm package
         working-directory: sqlite3_web/extra/js-package
         run: |
-          pnpm build:worker
-          pnpm node tool/build_worker_testing.js
-          pnpm build
+          corepack enable
+          npm run build:worker
+          node tool/build_worker_testing.js
+          npm run build
 
       - name: Web tests
         run: |
