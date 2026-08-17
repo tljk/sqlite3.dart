@@ -68,17 +68,14 @@ final class WasmVfs extends BaseVirtualFileSystem {
   int xAccess(String path, int flags) {
     final res = _runInWorker(
       WorkerOperation.xAccess,
-      NameAndInt32Flags(path, flags, 0, 0),
+      NameAndIntFlags(path, flags, 0, 0),
     );
     return res.flag0;
   }
 
   @override
   void xDelete(String path, int syncDir) {
-    _runInWorker(
-      WorkerOperation.xDelete,
-      NameAndInt32Flags(path, syncDir, 0, 0),
-    );
+    _runInWorker(WorkerOperation.xDelete, NameAndIntFlags(path, syncDir, 0, 0));
   }
 
   @override
@@ -91,7 +88,7 @@ final class WasmVfs extends BaseVirtualFileSystem {
     final filePath = path.path ?? random.randomFileName(prefix: '/');
     final result = _runInWorker(
       WorkerOperation.xOpen,
-      NameAndInt32Flags(filePath, flags, 0, 0),
+      NameAndIntFlags(filePath, flags, 0, 0),
     );
 
     final outFlags = result.flag0;

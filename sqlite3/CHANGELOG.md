@@ -1,6 +1,7 @@
 ## 3.5.2-wip
 
 - Fix `WasmSqlite3.loadFromUrl` silently dropping request headers and a custom WASM loader.
+- Fix OPFS atomics VFS causing IO errors for files larger than 2GB.
 
 ## 3.5.1
 

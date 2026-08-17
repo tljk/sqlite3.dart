@@ -127,7 +127,7 @@ class VfsWorker {
     return _ResolvedPath(absolutePath, dirHandle, file);
   }
 
-  Future<Flags> _xAccess(NameAndInt32Flags flags) async {
+  Future<Flags> _xAccess(NameAndIntFlags flags) async {
     try {
       final resolved = await _resolvePath(flags.name);
 
@@ -140,7 +140,7 @@ class VfsWorker {
     }
   }
 
-  Future<void> _xDelete(NameAndInt32Flags options) async {
+  Future<void> _xDelete(NameAndIntFlags options) async {
     final resolved = await _resolvePath(options.name);
     try {
       await resolved.directory.remove(resolved.filename);
@@ -150,7 +150,7 @@ class VfsWorker {
     }
   }
 
-  Future<Flags> _xOpen(NameAndInt32Flags req) async {
+  Future<Flags> _xOpen(NameAndIntFlags req) async {
     final flags = req.flag0;
     final create = (flags & SqlFlag.SQLITE_OPEN_CREATE) != 0;
 
@@ -332,14 +332,14 @@ class VfsWorker {
             response = const EmptyMessage();
             break;
           case WorkerOperation.xAccess:
-            response = await _xAccess(request as NameAndInt32Flags);
+            response = await _xAccess(request as NameAndIntFlags);
             break;
           case WorkerOperation.xDelete:
-            await _xDelete(request as NameAndInt32Flags);
+            await _xDelete(request as NameAndIntFlags);
             response = const EmptyMessage();
             break;
           case WorkerOperation.xOpen:
-            response = await _xOpen(request as NameAndInt32Flags);
+            response = await _xOpen(request as NameAndIntFlags);
             break;
           case WorkerOperation.xRead:
             response = await _xRead(request as Flags);

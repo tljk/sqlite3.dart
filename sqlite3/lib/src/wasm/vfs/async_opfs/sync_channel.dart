@@ -1,9 +1,10 @@
 import 'dart:convert';
+import 'dart:js_interop';
 import 'dart:typed_data';
 
 import '../../js_interop.dart';
 
-const protocolVersion = 1;
+const protocolVersion = 2;
 const asyncIdleWaitTimeMs = 150;
 const asyncIdleWaitTime = Duration(milliseconds: asyncIdleWaitTimeMs);
 
@@ -92,23 +93,23 @@ class MessageSerializer {
   static const totalSize = metaOffset + metaSize;
 
   final SharedArrayBuffer buffer;
-  final ByteData dataView;
+  final _DataView _dataView;
   final Uint8List byteView;
 
   MessageSerializer(this.buffer)
-    : dataView = buffer.asByteData(metaOffset, metaSize),
+    : _dataView = _DataView(buffer, metaOffset, metaSize),
       byteView = buffer.asUint8List();
 
   void write(Message message) {
     if (message is EmptyMessage) {
       // Nothing to do
     } else if (message is Flags) {
-      dataView.setInt32(0, message.flag0);
-      dataView.setInt32(4, message.flag1);
-      dataView.setInt32(8, message.flag2);
+      _setInt(_flag0Offset, message.flag0);
+      _setInt(_flag1Offset, message.flag1);
+      _setInt(_flag2Offset, message.flag2);
 
-      if (message is NameAndInt32Flags) {
-        _writeString(12, message.name);
+      if (message is NameAndIntFlags) {
+        _writeString(_stringOffset, message.name);
       }
     } else {
       throw UnsupportedError('Message $message');
@@ -120,7 +121,7 @@ class MessageSerializer {
   }
 
   String _readString(int offset) {
-    final length = dataView.getInt32(offset);
+    final length = _dataView.getInt32(offset);
     // Browsers don't allow TextDecoder.decode on shared array buffers
     // (https://github.com/whatwg/encoding/issues/172). So, we copy.
     final originalSlice = buffer.asUint8ListSlice(offset + 4, length);
@@ -131,8 +132,17 @@ class MessageSerializer {
 
   void _writeString(int offset, String data) {
     final encoded = utf8.encode(data);
-    dataView.setInt32(offset, encoded.length);
+    _dataView.setInt32(offset, encoded.length);
     byteView.setAll(offset + 4, encoded);
+  }
+
+  int _getInt(int offset) {
+    final bigInt = _dataView.getBigInt64(offset);
+    return bigInt.asDartInt;
+  }
+
+  void _setInt(int offset, int value) {
+    _dataView.setBigInt64(offset, JsBigInt.fromInt(value));
   }
 
   static EmptyMessage readEmpty(MessageSerializer unused) {
@@ -141,32 +151,37 @@ class MessageSerializer {
 
   static Flags readFlags(MessageSerializer msg) {
     return Flags(
-      msg.dataView.getInt32(0),
-      msg.dataView.getInt32(4),
-      msg.dataView.getInt32(8),
+      msg._getInt(_flag0Offset),
+      msg._getInt(_flag1Offset),
+      msg._getInt(_flag2Offset),
     );
   }
 
-  static NameAndInt32Flags readNameAndFlags(MessageSerializer msg) {
-    return NameAndInt32Flags(
-      msg._readString(12),
-      msg.dataView.getInt32(0),
-      msg.dataView.getInt32(4),
-      msg.dataView.getInt32(8),
+  static NameAndIntFlags readNameAndFlags(MessageSerializer msg) {
+    return NameAndIntFlags(
+      msg._readString(_stringOffset),
+      msg._getInt(_flag0Offset),
+      msg._getInt(_flag1Offset),
+      msg._getInt(_flag2Offset),
     );
   }
+
+  static const _flag0Offset = 0;
+  static const _flag1Offset = 8;
+  static const _flag2Offset = 16;
+  static const _stringOffset = 24;
 }
 
 enum WorkerOperation<Req extends Message, Res extends Message> {
-  xAccess<NameAndInt32Flags, Flags>(
+  xAccess<NameAndIntFlags, Flags>(
     MessageSerializer.readNameAndFlags,
     MessageSerializer.readFlags,
   ),
-  xDelete<NameAndInt32Flags, EmptyMessage>(
+  xDelete<NameAndIntFlags, EmptyMessage>(
     MessageSerializer.readNameAndFlags,
     MessageSerializer.readEmpty,
   ),
-  xOpen<NameAndInt32Flags, Flags>(
+  xOpen<NameAndIntFlags, Flags>(
     MessageSerializer.readNameAndFlags,
     MessageSerializer.readFlags,
   ),
@@ -230,8 +245,19 @@ class Flags extends Message {
   Flags(this.flag0, this.flag1, this.flag2);
 }
 
-class NameAndInt32Flags extends Flags {
+class NameAndIntFlags extends Flags {
   final String name;
 
-  NameAndInt32Flags(this.name, super.flag0, super.flag1, super.flag2);
+  NameAndIntFlags(this.name, super.flag0, super.flag1, super.flag2);
+}
+
+@JS('DataView')
+extension type _DataView._(JSObject _) implements JSObject {
+  external _DataView([SharedArrayBuffer buffer, int byteOffset, int length]);
+
+  external int getInt32(int byteOffset);
+  external void setInt32(int byteOffset, int value);
+
+  external JsBigInt getBigInt64(int byteOffset);
+  external void setBigInt64(int byteOffset, JsBigInt value);
 }
