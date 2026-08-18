@@ -146,8 +146,7 @@ jobs:
       run: dart run run.dart
       working-directory: native_tests/
     - name: Run tests AddressSanitizer and MemorySanitizer
-      # TODO: Re-enable after https://github.com/dart-lang/sdk/issues/64040
-      if: runner.os == 'Linux' && matrix.dart != 'dev'
+      if: runner.os == 'Linux'
       # TODO: Running with --sanitizer=tsan seems to be flaky?
       run: |
         dart run.dart --sanitizer=asan
