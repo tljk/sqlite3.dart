@@ -2,6 +2,7 @@
 
 - Fix `WasmSqlite3.loadFromUrl` silently dropping request headers and a custom WASM loader.
 - Fix OPFS atomics VFS causing IO errors for files larger than 2GB.
+- Upgrade SQLCipher to 4.18.0.
 
 ## 3.5.1
 
