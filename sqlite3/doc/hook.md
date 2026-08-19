@@ -168,3 +168,34 @@ If you control the build process of your application, you can use an external
 build system (like SwiftPM or CMake) to statically link SQLite into your application.
 Then, use `source: executable` to make `package:sqlite3` use that copy instead
 of building its own.
+
+## Supply-chain security
+
+By default, the `sqlite3` package downloads pre-compiled binaries from GitHub releases.
+For cases where this setup is unacceptable, using [custom SQLite builds](#custom-sqlite-builds)
+may be an alternative.
+
+All released binaries are built on GitHub actions, never from developer machines.
+The package uses [immutable releases](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
+and additionally verifies downloads through sha256 hashes included in Dart sources uploaded
+to pub.dev.
+
+Starting from version 3.5.2, [SLSA level 3](https://slsa.dev/) attestations are available
+for all binaries. This can be used to verify that libraries indeed come from GitHub actions.
+Downloaded libraries are stored in `.dart_tool/hooks_runner/shared/sqlite3/build/download-<hash>/`.
+
+Tools like [gh attestation verify](https://cli.github.com/manual/gh_attestation_verify)
+can be used to verify the provenance of such files:
+
+```
+gh attestation verify --repo simolus3/sqlite3.dart <file path>
+```
+
+Finally, a Software Bill of Materials (SBOM) in the CycloneDX format is available for
+all builds. For linked libraries, SBOMs describe packages and their version. For
+the `sqlite3` package, dependencies include SQLite itself, SQLite3 Multiple Ciphers and
+SQLCipher (with an OpenSSL dependency on some platforms).
+
+SBOMs can be looked up through `gh attestation verify --predicate-type "https://cyclonedx.org/bom"`.
+Note that SBOMs atteached to the `sqlite3` Dart package only cover native libraries, as
+Dart dependencies should be reconstructed from pubspec locks.
