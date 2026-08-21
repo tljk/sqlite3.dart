@@ -31,7 +31,10 @@ sealed class SqliteBinary {
       final value = (userDefines[key] as List?)?.cast<String>() ?? const [];
 
       if (baseUri == null) return value;
-      return [for (final path in value) baseUri.resolve(path).toFilePath()];
+      return [
+        for (final path in value)
+          if (p.isAbsolute(path)) path else baseUri.resolve(path).toFilePath(),
+      ];
     }
 
     switch (userDefines['source']) {
