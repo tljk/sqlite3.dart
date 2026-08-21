@@ -1,3 +1,7 @@
+## 3.6.0 (unreleased)
+
+- Hooks: Support relative paths in `additional_includes` and `additional_lib_directories`.
+
 ## 3.5.2
 
 - Fix `WasmSqlite3.loadFromUrl` silently dropping request headers and a custom WASM loader.

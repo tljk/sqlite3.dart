@@ -26,6 +26,14 @@ sealed class SqliteBinary {
       return PrecompiledFromGithubAssets(type, urlPattern: pattern);
     }
 
+    List<String> resolvedPaths(String key) {
+      final baseUri = userDefines.baseUri([key]);
+      final value = (userDefines[key] as List?)?.cast<String>() ?? const [];
+
+      if (baseUri == null) return value;
+      return [for (final path in value) baseUri.resolve(path).toFilePath()];
+    }
+
     switch (userDefines['source']) {
       case null:
       case 'sqlite3':
@@ -58,13 +66,12 @@ sealed class SqliteBinary {
             userDefines,
             input.config.code.targetOS,
           ),
-          additionalIncludes:
-              (userDefines['additional_includes'] as List?)?.cast() ?? const [],
+          additionalIncludes: resolvedPaths('additional_includes'),
           additionalFlags:
               (userDefines['additional_flags'] as List?)?.cast() ?? const [],
-          additionalLibraryDirectories:
-              (userDefines['additional_lib_directories'] as List?)?.cast() ??
-              const [],
+          additionalLibraryDirectories: resolvedPaths(
+            'additional_lib_directories',
+          ),
           additionalLibraries:
               (userDefines['additional_libraries'] as List?)?.cast() ??
               const [],
