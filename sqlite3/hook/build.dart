@@ -35,7 +35,7 @@ void main(List<String> args) async {
           ),
         );
       case CompileSqlite(
-        :final sourceFile,
+        :final sourceFiles,
         :final defines,
         :final additionalIncludes,
         :final additionalFlags,
@@ -70,8 +70,11 @@ ${usedSqliteSymbols.map((symbol) => '    $symbol;').join('\n')}
           name: 'sqlite3',
           packageName: 'sqlite3',
           assetName: name,
-          sources: [sourceFile],
-          includes: [p.dirname(sourceFile), ...additionalIncludes],
+          sources: sourceFiles,
+          includes: {
+            for (final source in sourceFiles) p.dirname(source),
+            ...additionalIncludes,
+          }.toList(),
           defines: defines,
           flags: [
             if (input.config.code.targetOS == OS.linux) ...[

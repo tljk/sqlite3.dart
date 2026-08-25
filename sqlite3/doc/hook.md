@@ -154,6 +154,8 @@ The build can be configured further with these additional options:
 - `additional_flags`: Additional compiler options.
 - `additional_lib_directories` and `additional_libraries`: Additional libraries to link.
 
+If multiple C source files need to be compiled, `path` can also be set to a list of strings.
+
 ### Alternatives
 
 Using the `source` mode to compile SQLite from sources in build hook can't

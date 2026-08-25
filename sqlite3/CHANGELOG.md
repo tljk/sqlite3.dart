@@ -1,6 +1,7 @@
 ## 3.6.0 (unreleased)
 
 - Hooks: Support relative paths in `additional_includes` and `additional_lib_directories`.
+- Hooks: Support multiple source files to compile with `source: source`.
 
 ## 3.5.2
 

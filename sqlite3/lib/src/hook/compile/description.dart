@@ -26,15 +26,16 @@ sealed class SqliteBinary {
       return PrecompiledFromGithubAssets(type, urlPattern: pattern);
     }
 
+    String resolvePath({required Uri base, required String path}) {
+      return p.isAbsolute(path) ? path : base.resolve(path).toFilePath();
+    }
+
     List<String> resolvedPaths(String key) {
       final baseUri = userDefines.baseUri([key]);
       final value = (userDefines[key] as List?)?.cast<String>() ?? const [];
 
       if (baseUri == null) return value;
-      return [
-        for (final path in value)
-          if (p.isAbsolute(path)) path else baseUri.resolve(path).toFilePath(),
-      ];
+      return [for (final path in value) resolvePath(base: baseUri, path: path)];
     }
 
     switch (userDefines['source']) {
@@ -63,8 +64,26 @@ sealed class SqliteBinary {
       case 'executable':
         return SimpleBinary.fromExecutable;
       case 'source':
+        final basePath = userDefines.baseUri(['path']);
+        final path = userDefines['path'];
+
+        if (basePath == null || path == null) {
+          throw ArgumentError('Using source: source requires a path key');
+        }
+
         return CompileSqlite(
-          sourceFile: userDefines.path('path')!.toFilePath(),
+          sourceFiles: switch (path) {
+            final String path => [resolvePath(base: basePath, path: path)],
+            final List<Object?> paths => [
+              for (final path in paths)
+                resolvePath(base: basePath, path: path as String),
+            ],
+            _ => throw ArgumentError.value(
+              path,
+              'path',
+              'Should be a string or a list of strings',
+            ),
+          },
           defines: CompilerDefines.parse(
             userDefines,
             input.config.code.targetOS,
@@ -327,8 +346,8 @@ final class PrecompiledForTesting extends PrecompiledBinary {
 }
 
 final class CompileSqlite implements SqliteBinary {
-  /// Path to the `sqlite3.c` source file to compile.
-  final String sourceFile;
+  /// Path to source files to compile (typically a single `sqlite3.c`).
+  final List<String> sourceFiles;
 
   /// User-defines for the SQLite compilation.
   final CompilerDefines defines;
@@ -345,7 +364,7 @@ final class CompileSqlite implements SqliteBinary {
   final List<String> additionalLibraries;
 
   CompileSqlite({
-    required this.sourceFile,
+    required this.sourceFiles,
     required this.defines,
     required this.additionalIncludes,
     required this.additionalFlags,
