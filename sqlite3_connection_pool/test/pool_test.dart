@@ -182,12 +182,14 @@ void main() {
     pool.updatedTables.first.then((v) => update = v);
 
     final writer = await pool.writer();
+    addTearDown(writer.returnLease);
     await writer.execute('CREATE TABLE foo (id INTEGER NOT NULL PRIMARY KEY);');
     await writer.execute('INSERt INTO foo DEFAULT VALUES');
     await pumpEventQueue();
     expect(update, isNull);
 
     final reader = await pool.reader();
+    addTearDown(reader.returnLease);
     await reader.notifyUpdates();
     await pumpEventQueue();
     expect(update, isNull);
