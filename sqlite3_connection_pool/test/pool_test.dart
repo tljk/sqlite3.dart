@@ -175,6 +175,28 @@ void main() {
     db.returnLease();
   });
 
+  test('notifying on read connection does not interact with pool', () async {
+    final pool = testPool();
+    List<String>? update;
+
+    pool.updatedTables.first.then((v) => update = v);
+
+    final writer = await pool.writer();
+    await writer.execute('CREATE TABLE foo (id INTEGER NOT NULL PRIMARY KEY);');
+    await writer.execute('INSERt INTO foo DEFAULT VALUES');
+    await pumpEventQueue();
+    expect(update, isNull);
+
+    final reader = await pool.reader();
+    await reader.notifyUpdates();
+    await pumpEventQueue();
+    expect(update, isNull);
+
+    await writer.notifyUpdates();
+    await pumpEventQueue();
+    expect(update, isNotNull);
+  });
+
   group('can add additional readers', () {
     test('completes previous requests', () async {
       final pool = testPool(readConnections: 1);

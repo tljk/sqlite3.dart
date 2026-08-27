@@ -171,7 +171,7 @@ final class SqliteConnectionPool {
     final lease = ConnectionLease._(
       PoolConnection.unsafeFromPointer(connectionPointer.connection),
       request,
-      true,
+      writer,
     );
     await lease._rollbackPendingTransaction();
     return lease;
