@@ -1,3 +1,8 @@
+## 0.2.10
+
+- Fix race condition when `ConnectionLease.notifyUpdates` is called on a
+  read-only connection.
+
 ## 0.2.9
 
 - Avoid `NativeCallable` to support platforms like GrapheneOS where `mprotect` is forbidden.
