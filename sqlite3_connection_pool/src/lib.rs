@@ -4,7 +4,7 @@ use crate::dart::DartPort;
 use crate::pool::{ConnectionPool, PendingMessage, PoolConnection, PoolRequestHandle, PoolState};
 use crate::registry::{InitializedPool, MaybeInitializedPool, PoolRegistry, UninitializedPool};
 use crate::update_hook::send_update_notification;
-use std::ffi::{c_char, c_int, c_void, CStr};
+use std::ffi::{CStr, c_char, c_int, c_void};
 use std::mem::MaybeUninit;
 use std::ptr::NonNull;
 use std::sync::{Arc, Mutex};

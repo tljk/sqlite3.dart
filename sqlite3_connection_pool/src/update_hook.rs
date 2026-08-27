@@ -63,7 +63,10 @@ impl CollectedTableUpdates {
     }
 
     fn handle_commit(&mut self) {
-        for update in mem::take(&mut self.uncommitted_updates) {
+        self.outstanding_notification
+            .reserve(self.uncommitted_updates.len());
+
+        for update in self.uncommitted_updates.drain() {
             self.outstanding_notification.insert(update);
         }
     }
@@ -91,27 +94,26 @@ pub fn send_update_notification<'a>(
         return;
     }
 
-    let iter = updates.into_iter();
-    let mut dart_strings: Vec<RawDartCObject> = Vec::with_capacity(iter.size_hint().0);
-    for update in iter {
-        dart_strings.push(RawDartCObject {
+    let mut dart_strings: Vec<RawDartCObject> = updates
+        .into_iter()
+        .map(|update| RawDartCObject {
             type_: RawDartCObject::TYPE_STRING,
             value: RawDartCObjectValue {
                 as_string: update.as_ptr(),
             },
-        });
-    }
+        })
+        .collect();
 
-    raw_send_update_notification(dart_strings, listeners, functions);
+    raw_send_update_notification(&mut dart_strings, listeners, functions);
 }
 
 fn raw_send_update_notification(
-    updates: Vec<RawDartCObject>,
+    updates: &mut [RawDartCObject],
     listeners: &[DartPort],
     functions: &ExternalFunctions,
 ) {
     let mut dart_string_references: Vec<*mut RawDartCObject> =
-        updates.iter().map(|d| d as *const _ as *mut _).collect();
+        updates.iter_mut().map(std::ptr::from_mut).collect();
 
     // Create Dart list of strings.
     let mut dart_msg = RawDartCObject {
