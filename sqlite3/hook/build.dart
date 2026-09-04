@@ -5,6 +5,7 @@ import 'package:hooks/hooks.dart';
 import 'package:native_toolchain_c/native_toolchain_c.dart';
 import 'package:path/path.dart' as p;
 
+import 'package:sqlite3/src/hook/assets.dart';
 import 'package:sqlite3/src/hook/compile/description.dart';
 import 'package:sqlite3/src/hook/compile/used_symbols.dart';
 
@@ -97,8 +98,9 @@ ${usedSqliteSymbols.map((symbol) => '    $symbol;').join('\n')}
           ],
           libraryDirectories: [...additionalLibraryDirectories],
           libraries: [
-            if (input.config.code.targetOS == OS.android) ...[
-              // We need to link the math library on Android.
+            if (input.config.code.targetOS == OS.android ||
+                isOhosCodeConfig(input.config.code)) ...[
+              // We need to link the math library on Android and OpenHarmony.
               'm',
             ],
             ...additionalLibraries,

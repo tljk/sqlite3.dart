@@ -39,6 +39,7 @@ enum TargetOperatingSystem {
   ios(OS.iOS),
   iosSimulator(OS.iOS, customName: 'ios_sim'),
   android(OS.android),
+  ohos(OS.linux, customName: 'ohos'),
   unknown(OS.linux, customName: 'unknown');
 
   final OS hookOS;
@@ -50,6 +51,8 @@ enum TargetOperatingSystem {
   String get name => _nameOverride ?? hookOS.name;
 
   static TargetOperatingSystem forConfig(CodeConfig config) {
+    if (isOhosCodeConfig(config)) return ohos;
+
     return switch (config.targetOS) {
       OS.windows => windows,
       OS.macOS => macos,
@@ -61,6 +64,13 @@ enum TargetOperatingSystem {
       _ => unknown,
     };
   }
+}
+
+bool isOhosCodeConfig(CodeConfig config) {
+  if (config.targetOS.name == 'ohos') return true;
+
+  final compiler = config.cCompiler?.compiler.path.toLowerCase();
+  return compiler != null && compiler.contains('openharmony');
 }
 
 final class PrebuiltSqliteLibrary {
@@ -91,7 +101,10 @@ final class PrebuiltSqliteLibrary {
         os == TargetOperatingSystem.linux &&
         architecture == Architecture.ia32 &&
         type == LibraryType.sqlite3mc;
-    return !unsupportedCiphersBuild;
+    // Only plain sqlite3 is currently provided for OHOS.
+    final unsupportedOhosBuild =
+        os == TargetOperatingSystem.ohos && type != LibraryType.sqlite3;
+    return !unsupportedCiphersBuild && !unsupportedOhosBuild;
   }
 
   /// The name of this prebuilt library in GitHub releases.
@@ -204,5 +217,6 @@ final class PrebuiltSqliteLibrary {
       Architecture.arm,
       Architecture.arm64,
     ],
+    TargetOperatingSystem.ohos: [Architecture.arm64],
   };
 }

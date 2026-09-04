@@ -30,6 +30,7 @@ const Map<String, String> assetNameToSha256Hash = {
   'libsqlite3.arm64.ios_sim.dylib': '1ef1f54d5524f6c99ff74ae1244fb3d815f7a40c7c1cf7615a6321ba752fa8ff',
   'libsqlite3.arm64.linux.so': 'fa2331fcc1ffbda8b492ddbe8e61fef8389d38e2cf450aea6523c6fcdefc2591',
   'libsqlite3.arm64.macos.dylib': 'f84bea51f2498dea33564d854def1252ec4551d34371545a505589b361efe487',
+  'libsqlite3.arm64.ohos.so': '61cba613d742802124b5b5c7ee94b6c6a38f04e1b1d07db40d6357d90c820be6',
   'libsqlite3.ia32.android.so': '6d73649ad5896eb276aca304456b8664c0f9a82d6c7785c5975d43e0462d3777',
   'libsqlite3.ia32.linux.so': '4a0a8277aac5a20100b94ee78ba91383984b85f8d2151dd7a04efe0c3ccf7a41',
   'libsqlite3.riscv64.linux.so': '858895c42c30894e163bb4e02993f0a14dbca8cab35a4cd85dc27cc5c69739c2',
