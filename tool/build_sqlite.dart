@@ -17,8 +17,10 @@ final _limitConcurrency = Pool(Platform.numberOfProcessors);
 void main(List<String> args) async {
   Directory.current = Directory('sqlite3');
 
-  var operatingSystems = args.map(OS.fromString).toList();
-  if (operatingSystems.isEmpty) {
+  final buildOhos = args.contains('ohos');
+  var operatingSystems =
+      args.where((arg) => arg != 'ohos').map(OS.fromString).toList();
+  if (operatingSystems.isEmpty && !buildOhos) {
     if (Platform.isLinux) {
       operatingSystems = [
         OS.linux,
@@ -34,11 +36,11 @@ void main(List<String> args) async {
     }
   }
 
-  if (operatingSystems.isEmpty) {
+  if (operatingSystems.isEmpty && !buildOhos) {
     print('Usage: dart run tool/build_sqlite3.dart <operating systems...>');
     exit(1);
   }
-  print('Compiling for $operatingSystems');
+  print('Compiling for $operatingSystems${buildOhos ? ' + ohos' : ''}');
 
   const fs = LocalFileSystem();
 
@@ -64,6 +66,7 @@ void main(List<String> args) async {
         {IOSCodeConfig? iOS, String? osNameOverride}) async {
       final osName = osNameOverride ?? os.name;
       final isAppleTarget = os == OS.iOS || os == OS.macOS;
+      final isOhosTarget = osNameOverride == 'ohos';
       CCompilerConfig? compilerConfig;
 
       if (isAppleTarget) {
@@ -82,12 +85,33 @@ void main(List<String> args) async {
           compiler: tool('clang'),
           linker: tool('ld'),
         );
+      } else if (isOhosTarget) {
+        final ndkHome = Platform.environment['OHOS_NDK_HOME'];
+        if (ndkHome == null) {
+          throw StateError(
+              'OHOS_NDK_HOME must point to the OpenHarmony native SDK');
+        }
+        final llvmBin = p.join(ndkHome, 'native', 'llvm', 'bin');
+
+        Uri tool(String name) => Uri.file(p.join(llvmBin, name));
+
+        compilerConfig = CCompilerConfig(
+          archiver: tool('llvm-ar'),
+          compiler: tool('clang'),
+          linker: tool('ld.lld'),
+        );
       }
 
       final additionalIncludes = <String>[];
-      final additionalFlags = <String>[];
+      final additionalFlags = <String>[
+        // The OHOS SDK's clang doesn't default to targeting OHOS on its own.
+        if (isOhosTarget) '--target=${_ohosClangTarget(architecture)}',
+      ];
       final additionalLibDirectories = <String>[];
-      final additionalLibraries = <String>[];
+      final additionalLibraries = <String>[
+        // We need to link the math library on OpenHarmony.
+        if (isOhosTarget) 'm',
+      ];
 
       if (mode == SqliteFork.sqlcipher) {
         if (isAppleTarget) {
@@ -163,11 +187,11 @@ void main(List<String> args) async {
           defines: {
             'source': 'source',
             'path': p.relative(sourcePath, from: fs.currentDirectory.path),
+            'additional_includes': additionalIncludes,
+            'additional_flags': additionalFlags,
+            'additional_lib_directories': additionalLibDirectories,
+            'additional_libraries': additionalLibraries,
             if (mode == SqliteFork.sqlcipher) ...{
-              'additional_includes': additionalIncludes,
-              'additional_flags': additionalFlags,
-              'additional_lib_directories': additionalLibDirectories,
-              'additional_libraries': additionalLibraries,
               'defines': {
                 'defines': [
                   // Minimum extra flags to build SQLCipher
@@ -221,11 +245,28 @@ void main(List<String> args) async {
             iOS: simulatorConfig, osNameOverride: 'ios_sim'));
       }
     }
+
+    // Only plain sqlite3 is currently provided for OHOS, matching
+    // sqlite3/lib/src/hook/assets.dart.
+    if (buildOhos && mode == SqliteFork.sqlite) {
+      for (final architecture in _ohosAbis) {
+        scheduleTask(
+            () => buildAndCopy(OS.linux, architecture, osNameOverride: 'ohos'));
+      }
+    }
   }
 
   await Future.wait(buildTasks, eagerError: true);
   print('Done building');
 }
+
+/// The clang `--target=` triple to use when compiling for OHOS.
+String _ohosClangTarget(Architecture architecture) => switch (architecture) {
+      Architecture.arm => 'arm-linux-ohos',
+      Architecture.arm64 => 'aarch64-linux-ohos',
+      Architecture.x64 => 'x86_64-linux-ohos',
+      _ => throw UnsupportedError('OHOS is not supported for $architecture'),
+    };
 
 bool _skipBuild(OS targetOS, Architecture targetArch, SqliteFork type) {
   switch (type) {
@@ -279,3 +320,9 @@ const _osToAbis = {
     // Note: There's a special check to also compile simulator builds for x64
   ],
 };
+
+const _ohosAbis = [
+  Architecture.arm,
+  Architecture.arm64,
+  Architecture.x64,
+];
