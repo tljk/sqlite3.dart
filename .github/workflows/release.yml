@@ -66,7 +66,8 @@ jobs:
     needs: [prepare_release]
     permissions:
       id-token: write # Needed to create OIDC token for pub.dev
-    if: "${{ startsWith(github.ref_name, 'sqlite3-') }}"
+    # if: "${{ startsWith(github.ref_name, 'sqlite3-') }}"
+    if: false
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     with:
       environment: 'pub.dev'
@@ -76,7 +77,8 @@ jobs:
     needs: [prepare_release]
     permissions:
       id-token: write # Needed to create OIDC token for pub.dev
-    if: "${{ startsWith(github.ref_name, 'sqlite3_test-') }}"
+    # if: "${{ startsWith(github.ref_name, 'sqlite3_test-') }}"
+    if: false
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     with:
       environment: 'pub.dev'
@@ -86,7 +88,8 @@ jobs:
     needs: [prepare_release]
     permissions:
       id-token: write # Needed to create OIDC token for pub.dev
-    if: "${{ startsWith(github.ref_name, 'sqlite3_web-') }}"
+    # if: "${{ startsWith(github.ref_name, 'sqlite3_web-') }}"
+    if: false
     uses: dart-lang/setup-dart/.github/workflows/publish.yml@v1
     with:
       environment: 'pub.dev'
@@ -96,7 +99,8 @@ jobs:
     needs: [fetch_sqlite, prepare_release]
     permissions:
       id-token: write # Needed to create OIDC token for pub.dev
-    if: "${{ startsWith(github.ref_name, 'sqlite3_connection_pool-') }}"
+    # if: "${{ startsWith(github.ref_name, 'sqlite3_connection_pool-') }}"
+    if: false
     runs-on: ubuntu-latest
     environment: 'pub.dev'
     # This can't use the workflow because we need to download assets to include in
@@ -126,7 +130,8 @@ jobs:
     needs: [fetch_sqlite]
     permissions:
       id-token: write # Needed to create OIDC token for npm trusted publishing
-    if: "${{ startsWith(github.ref_name, 'sqlite3_web_js-') }}"
+    # if: "${{ startsWith(github.ref_name, 'sqlite3_web_js-') }}"
+    if: false
     runs-on: ubuntu-latest
     environment: 'npm'
     steps:

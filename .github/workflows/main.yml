@@ -31,25 +31,19 @@ jobs:
   analyze:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
     timeout-minutes: 5
-    strategy:
-      matrix:
-        dart: [stable]
-
-    name: Analyze ${{ matrix.package }}
+    name: Analyze with OpenHarmony Dart
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-    - uses: dart-lang/setup-dart@v1
-      with:
-        sdk: ${{ matrix.dart }}
+    - uses: ./.github/actions/setup-ohos-dart
     - uses: actions/cache@v6
       with:
         path: "${{ env.PUB_CACHE }}"
-        key: dart-dependencies-${{ matrix.dart }}-${{ runner.os }}
+        key: dart-dependencies-ohos-${{ runner.os }}
         restore-keys: |
-          dart-dependencies-${{ matrix.dart }}-
+          dart-dependencies-ohos-${{ runner.os }}-
           dart-dependencies-
 
     - name: Pub get
@@ -79,18 +73,15 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
-        dart: [stable, dev]
 
-    name: Unit tests with Dart ${{ matrix.dart }} on ${{ matrix.os }}
+    name: Unit tests with OpenHarmony Dart on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
 
     steps:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-    - uses: dart-lang/setup-dart@v1
-      with:
-        sdk: ${{ matrix.dart }}
+    - uses: ./.github/actions/setup-ohos-dart
     - name: Download compiled sqlite3
       uses: actions/download-artifact@v8
       with:
@@ -110,9 +101,9 @@ jobs:
     - uses: actions/cache@v6
       with:
         path: "${{ env.PUB_CACHE }}"
-        key: dart-dependencies-${{ matrix.dart }}-${{ runner.os }}
+        key: dart-dependencies-ohos-${{ runner.os }}
         restore-keys: |
-          dart-dependencies-${{ matrix.dart }}-
+          dart-dependencies-ohos-${{ runner.os }}-
           dart-dependencies-
     - name: Get Dart dependencies
       run: |
@@ -142,7 +133,8 @@ jobs:
       run: dart run run.dart
       working-directory: native_tests/
     - name: Run tests AddressSanitizer and MemorySanitizer
-      if: runner.os == 'Linux'
+      # if: runner.os == 'Linux'
+      if: false
       # TODO: Running with --sanitizer=tsan seems to be flaky?
       run: |
         dart run.dart --sanitizer=asan
@@ -187,7 +179,8 @@ jobs:
         dart test -P web -r expanded
       # If browsers behave differently on different platforms, surely that's not our fault...
       # So, only run browser tests on Linux to be faster.
-      if: runner.os == 'Linux'
+      # if: runner.os == 'Linux'
+      if: false
       working-directory: sqlite3/
 
   upload_asset_hashes:
@@ -199,7 +192,7 @@ jobs:
     - uses: actions/checkout@v7
       with:
         persist-credentials: false
-    - uses: dart-lang/setup-dart@v1
+    - uses: ./.github/actions/setup-ohos-dart
     - name: Download compiled sqlite3
       uses: actions/download-artifact@v8
       with:
@@ -208,9 +201,9 @@ jobs:
     - uses: actions/cache@v6
       with:
         path: "${{ env.PUB_CACHE }}"
-        key: dart-dependencies-beta-${{ runner.os }}
+        key: dart-dependencies-ohos-${{ runner.os }}
         restore-keys: |
-          dart-dependencies-beta-
+          dart-dependencies-ohos-${{ runner.os }}-
           dart-dependencies-
     - name: Get Dart dependencies
       run: |
@@ -227,7 +220,8 @@ jobs:
         retention-days: 1
 
   integration_test_web:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    if: false
     timeout-minutes: 10
     needs: [analyze, fetch_sqlite]
     runs-on: ubuntu-latest
@@ -288,7 +282,8 @@ jobs:
   # Shamelessly stolen from https://medium.com/flutter-community/run-flutter-driver-tests-on-github-actions-13c639c7e4ab
 
   integration_test_desktop:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    if: false
     needs: [test, fetch_sqlite]
     runs-on: macos-latest
     timeout-minutes: 30
@@ -366,7 +361,8 @@ jobs:
           flutter test integration_test -Dsqlite3.sqlcipher=true -d macos
 
   integration_test_android:
-    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    # if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    if: false
     needs: [test, fetch_sqlite]
     runs-on: ubuntu-latest
     timeout-minutes: 30

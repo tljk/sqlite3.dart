@@ -123,60 +123,56 @@ Future<void> main() async {
       await IndexedDbFileSystem.deleteDatabase(name);
     });
 
-    test(
-      'example with frequent writes',
-      () async {
-        final fileSystem = await IndexedDbFileSystem.open(
-          dbName: 'test',
-          random: random,
-        );
-        final sqlite3 = await loadSqlite3(fileSystem);
-        final database = sqlite3.open('test');
-        expect(database.userVersion, 0);
-        database.userVersion = 1;
-        expect(database.userVersion, 1);
+    test('example with frequent writes', () async {
+      final fileSystem = await IndexedDbFileSystem.open(
+        dbName: 'test',
+        random: random,
+      );
+      final sqlite3 = await loadSqlite3(fileSystem);
+      final database = sqlite3.open('test');
+      expect(database.userVersion, 0);
+      database.userVersion = 1;
+      expect(database.userVersion, 1);
 
-        database.execute(
-          'CREATE TABLE IF NOT EXISTS users ( '
-          'id INTEGER NOT NULL, '
-          'name TEXT NOT NULL, '
-          'email TEXT NOT NULL UNIQUE, '
-          'user_id INTEGER NOT NULL, '
-          'PRIMARY KEY (id));',
-        );
+      database.execute(
+        'CREATE TABLE IF NOT EXISTS users ( '
+        'id INTEGER NOT NULL, '
+        'name TEXT NOT NULL, '
+        'email TEXT NOT NULL UNIQUE, '
+        'user_id INTEGER NOT NULL, '
+        'PRIMARY KEY (id));',
+      );
 
-        final prepared = database.prepare(
-          'INSERT INTO users '
-          '(id, name, email, user_id) VALUES (?, ?, ?, ?)',
-        );
+      final prepared = database.prepare(
+        'INSERT INTO users '
+        '(id, name, email, user_id) VALUES (?, ?, ?, ?)',
+      );
 
-        for (var i = 0; i < 200; i++) {
-          prepared.execute([
-            BigInt.from(i),
-            'name',
-            'email${BigInt.from(i)}',
-            BigInt.from(i),
-          ]);
-        }
+      for (var i = 0; i < 200; i++) {
+        prepared.execute([
+          BigInt.from(i),
+          'name',
+          'email${BigInt.from(i)}',
+          BigInt.from(i),
+        ]);
+      }
 
-        expect(database.select('SELECT * FROM users'), hasLength(200));
+      expect(database.select('SELECT * FROM users'), hasLength(200));
 
-        database.close();
+      database.close();
 
-        // file-system should save reasonably quickly
-        await fileSystem.close().timeout(const Duration(seconds: 1));
+      // file-system should save reasonably quickly
+      await fileSystem.close().timeout(const Duration(seconds: 1));
 
-        final fileSystem2 = await IndexedDbFileSystem.open(
-          dbName: 'test',
-          random: random,
-        );
-        final sqlite32 = await loadSqlite3(fileSystem2);
-        final database2 = sqlite32.open('test');
-        expect(database2.userVersion, 1);
-        expect(database2.select('SELECT * FROM users'), hasLength(200));
-      },
-      onPlatform: {'wasm': Skip('Broken on dart2wasm')},
-    );
+      final fileSystem2 = await IndexedDbFileSystem.open(
+        dbName: 'test',
+        random: random,
+      );
+      final sqlite32 = await loadSqlite3(fileSystem2);
+      final database2 = sqlite32.open('test');
+      expect(database2.userVersion, 1);
+      expect(database2.select('SELECT * FROM users'), hasLength(200));
+    }, onPlatform: {'wasm': Skip('Broken on dart2wasm')});
   });
 }
 
