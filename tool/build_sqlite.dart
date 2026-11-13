@@ -23,6 +23,7 @@ void main(List<String> args) async {
       operatingSystems = [
         OS.linux,
         OS.android,
+        OS.ohos,
       ];
     } else if (Platform.isMacOS) {
       operatingSystems = [
@@ -234,9 +235,9 @@ bool _skipBuild(OS targetOS, Architecture targetArch, SqliteFork type) {
       return false;
     case SqliteFork.sqlite3mc:
       // Compiling sqlite3mc for x86 on Linux does not work.
-      return targetOS == OS.linux && targetArch == Architecture.ia32;
+      return targetOS == OS.ohos || (targetOS == OS.linux && targetArch == Architecture.ia32);
     case SqliteFork.sqlcipher:
-      return false;
+      return targetOS == OS.ohos;
   }
 }
 
@@ -263,6 +264,11 @@ const _osToAbis = {
     Architecture.arm,
     Architecture.arm64,
     Architecture.ia32,
+    Architecture.x64,
+  ],
+  OS.ohos: [
+    Architecture.arm,
+    Architecture.arm64,
     Architecture.x64,
   ],
   OS.windows: [

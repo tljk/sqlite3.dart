@@ -185,31 +185,27 @@ SqliteException(1): message
       );
     });
 
-    test(
-      'reports position',
-      () {
-        final db = sqlite3.openInMemory();
-        addTearDown(db.close);
+    test('reports position', () {
+      final db = sqlite3.openInMemory();
+      addTearDown(db.close);
 
-        expect(
-          () => db.select('SELECT totally invalid syntax;'),
-          throwsA(
-            isA<SqliteException>()
-                .having(
-                  (e) => e.causingStatement,
-                  'causingStatement',
-                  'SELECT totally invalid syntax;',
-                )
-                .having((e) => e.offset, 'offset', 23)
-                .having(
-                  (e) => e.toString(),
-                  'toString()',
-                  contains('Causing statement (at position 23): SELECT'),
-                ),
-          ),
-        );
-      },
-      skip: hasErrorOffset ? null : 'Missing sqlite3_error_offset',
-    );
+      expect(
+        () => db.select('SELECT totally invalid syntax;'),
+        throwsA(
+          isA<SqliteException>()
+              .having(
+                (e) => e.causingStatement,
+                'causingStatement',
+                'SELECT totally invalid syntax;',
+              )
+              .having((e) => e.offset, 'offset', 23)
+              .having(
+                (e) => e.toString(),
+                'toString()',
+                contains('Causing statement (at position 23): SELECT'),
+              ),
+        ),
+      );
+    }, skip: hasErrorOffset ? null : 'Missing sqlite3_error_offset');
   });
 }

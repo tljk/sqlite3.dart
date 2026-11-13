@@ -203,7 +203,7 @@ Future<Map<String, String>> _resolveWindowsBuildConfig(
   };
 
   final resolved =
-      await vcvars.defaultResolver!.resolve(ToolResolvingContext(logger: null));
+      await vcvars.defaultResolver!.resolve(logger: null);
   return await environmentFromBatchFile(resolved.first.uri);
 }
 

@@ -27,7 +27,7 @@ enum LibraryType {
     return switch (config.targetOS) {
       OS.windows => '$basename.dll',
       OS.iOS || OS.macOS => 'lib$basename.dylib',
-      OS.android || OS.linux || _ => 'lib$basename.so',
+      OS.android || OS.ohos || OS.linux || _ => 'lib$basename.so',
     };
   }
 }
@@ -39,6 +39,7 @@ enum TargetOperatingSystem {
   ios(OS.iOS),
   iosSimulator(OS.iOS, customName: 'ios_sim'),
   android(OS.android),
+  ohos(OS.ohos),
   unknown(OS.linux, customName: 'unknown');
 
   final OS hookOS;
@@ -58,6 +59,7 @@ enum TargetOperatingSystem {
       OS.iOS when config.iOS.targetSdk == IOSSdk.iPhoneSimulator =>
         iosSimulator,
       OS.android => android,
+      OS.ohos => ohos,
       _ => unknown,
     };
   }
@@ -88,9 +90,10 @@ final class PrebuiltSqliteLibrary {
     // Compiling sqlite3mc fails for i686 linux builds, so report that as not
     // supported.
     final unsupportedCiphersBuild =
-        os == TargetOperatingSystem.linux &&
-        architecture == Architecture.ia32 &&
-        type == LibraryType.sqlite3mc;
+        (os == TargetOperatingSystem.linux &&
+            architecture == Architecture.ia32 &&
+            type == LibraryType.sqlite3mc) ||
+        (os == TargetOperatingSystem.ohos && type != LibraryType.sqlite3);
     return !unsupportedCiphersBuild;
   }
 
@@ -200,6 +203,11 @@ final class PrebuiltSqliteLibrary {
     TargetOperatingSystem.iosSimulator: [Architecture.x64, Architecture.arm64],
     TargetOperatingSystem.android: [
       Architecture.ia32,
+      Architecture.x64,
+      Architecture.arm,
+      Architecture.arm64,
+    ],
+    TargetOperatingSystem.ohos: [
       Architecture.x64,
       Architecture.arm,
       Architecture.arm64,

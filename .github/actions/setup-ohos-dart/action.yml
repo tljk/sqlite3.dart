@@ -1,0 +1,105 @@
+name: Set up OpenHarmony Dart
+description: Install the Dart SDK bundled by the OpenHarmony Flutter fork
+# Version is bin/internal/engine.ohos.version in CPF-Flutter/flutter_flutter@oh-3.47.7-dev.
+runs:
+  using: composite
+  steps:
+    - name: Cache Dart SDK
+      id: dart-sdk-cache
+      uses: actions/cache@v6
+      with:
+        path: ${{ runner.temp }}/ohos-dart-sdk
+        key: ohos-dart-sdk-${{ runner.os }}-${{ runner.arch }}-aee5c121eb902bf3346d2efc9bf5abbe8afe41f6
+
+    - name: Download Dart SDK on Windows
+      if: runner.os == 'Windows' && steps.dart-sdk-cache.outputs.cache-hit != 'true'
+      shell: pwsh
+      run: |
+        $ErrorActionPreference = 'Stop'
+        $version = 'aee5c121eb902bf3346d2efc9bf5abbe8afe41f6'
+        $baseUrl = $env:FLUTTER_OHOS_STORAGE_BASE_URL
+        if (-not $baseUrl) {
+          $baseUrl = 'https://flutter-ohos.obs.cn-south-1.myhuaweicloud.com'
+        }
+        $arch = if ($env:RUNNER_ARCH -eq 'ARM64') { 'arm64' } else { 'x64' }
+        $archiveName = "dart-sdk-windows-$arch.zip"
+        $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
+        $sdkPath = Join-Path $env:RUNNER_TEMP 'ohos-dart-sdk'
+        $url = "$baseUrl/flutter_infra_release/flutter/$version/$archiveName"
+
+        if ($arch -eq 'arm64') {
+          try {
+            Invoke-WebRequest -Uri $url -Method Head | Out-Null
+          } catch {
+            $archiveName = 'dart-sdk-windows-x64.zip'
+            $archivePath = Join-Path $env:RUNNER_TEMP $archiveName
+            $url = "$baseUrl/flutter_infra_release/flutter/$version/$archiveName"
+          }
+        }
+
+        & curl.exe --fail --location --retry 3 --output $archivePath $url
+        if ($LASTEXITCODE -ne 0) {
+          throw "Failed to download the Dart SDK from $url"
+        }
+        Expand-Archive -LiteralPath $archivePath -DestinationPath $sdkPath
+        Remove-Item -LiteralPath $archivePath
+
+    - name: Download Dart SDK on Unix
+      if: runner.os != 'Windows' && steps.dart-sdk-cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        version=aee5c121eb902bf3346d2efc9bf5abbe8afe41f6
+        base_url="${FLUTTER_OHOS_STORAGE_BASE_URL:-https://flutter-ohos.obs.cn-south-1.myhuaweicloud.com}"
+        case "$RUNNER_OS" in
+          Linux) os=linux ;;
+          macOS) os=darwin ;;
+          *)
+            echo "Unsupported runner OS: $RUNNER_OS" >&2
+            exit 1
+            ;;
+        esac
+        case "$RUNNER_ARCH" in
+          X64) arch=x64 ;;
+          ARM64) arch=arm64 ;;
+          *)
+            echo "Unsupported runner architecture: $RUNNER_ARCH" >&2
+            exit 1
+            ;;
+        esac
+
+        archive_name="dart-sdk-$os-$arch.zip"
+        archive_path="$RUNNER_TEMP/$archive_name"
+        sdk_path="$RUNNER_TEMP/ohos-dart-sdk"
+        url="$base_url/flutter_infra_release/flutter/$version/$archive_name"
+
+        mkdir -p "$sdk_path"
+        curl --fail --location --retry 3 --output "$archive_path" "$url"
+        unzip -o -q "$archive_path" -d "$sdk_path"
+        rm "$archive_path"
+
+    - name: Add Dart SDK to PATH on Windows
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $sdkBin = Join-Path $env:RUNNER_TEMP 'ohos-dart-sdk\dart-sdk\bin'
+        Add-Content -Path $env:GITHUB_PATH -Value $sdkBin
+        $pubCache = $env:PUB_CACHE
+        if (-not $pubCache) {
+          $pubCache = Join-Path $env:LOCALAPPDATA 'Pub\Cache'
+          Add-Content -Path $env:GITHUB_ENV -Value "PUB_CACHE=$pubCache"
+        }
+        Add-Content -Path $env:GITHUB_PATH -Value (Join-Path $pubCache 'bin')
+
+    - name: Add Dart SDK to PATH on Unix
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        pub_cache="${PUB_CACHE:-$HOME/.pub-cache}"
+        if [[ -z "${PUB_CACHE:-}" ]]; then
+          printf 'PUB_CACHE=%s\n' "$pub_cache" >> "$GITHUB_ENV"
+        fi
+        printf '%s\n' \
+          "$RUNNER_TEMP/ohos-dart-sdk/dart-sdk/bin" \
+          "$pub_cache/bin" >> "$GITHUB_PATH"

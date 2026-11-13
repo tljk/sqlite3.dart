@@ -97,7 +97,8 @@ ${usedSqliteSymbols.map((symbol) => '    $symbol;').join('\n')}
           ],
           libraryDirectories: [...additionalLibraryDirectories],
           libraries: [
-            if (input.config.code.targetOS == OS.android) ...[
+            if (input.config.code.targetOS == OS.android ||
+                input.config.code.targetOS == OS.ohos) ...[
               // We need to link the math library on Android.
               'm',
             ],

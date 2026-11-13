@@ -12,6 +12,22 @@ dependencies:
   pool: ^1.5.2
   hooks: ^2.0.0
 
+dependency_overrides:
+  code_assets:
+    git:
+      url: https://gitcode.com/CPF-Flutter/fluttertpc_dart_native.git
+      path: pkgs/code_assets
+      ref: flutter_3.47.7_deps
+  hooks:
+    git:
+      url: https://gitcode.com/openharmony-sig/fluttertpc_dart_native.git
+      path: pkgs/hooks
+      ref: flutter_3.47.7_deps
+  native_toolchain_c:
+    git:
+      url: https://gitcode.com/hxa-flutter/native_toolchain_c.git
+      ref: main
+
 workspace:
   - sqlite3
   - sqlite3/example/custom_extension
